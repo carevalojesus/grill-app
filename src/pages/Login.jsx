@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
@@ -25,7 +25,21 @@ export default function Login() {
       console.log('Usuario conectado:', userCredential.user);
       navigate('/');
     } catch (error) {
-      setError(error.message);
+      // Manejo de errores de Firebase
+      switch (error.code) {
+        case 'auth/user-not-found':
+          setError('No existe una cuenta con ese correo electrónico.');
+          break;
+        case 'auth/wrong-password':
+          setError('La contraseña es incorrecta.');
+          break;
+        case 'auth/too-many-requests':
+          setError('Demasiados intentos fallidos. Por favor, inténtalo más tarde.');
+          break;
+        default:
+          setError('Error al iniciar sesión. Por favor, inténtalo de nuevo.');
+          break;
+      }
     }
   };
 
