@@ -23,7 +23,7 @@ export default function Login() {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
       console.log('Usuario conectado:', userCredential.user);
-      navigate('/');
+      navigate('/dashboard');
     } catch (error) {
       // Manejo de errores de Firebase
       switch (error.code) {
