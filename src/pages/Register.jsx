@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../lib/firebaseConfig'; // Asegúrate de que la ruta sea correcta
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { auth, firestore } from '../lib/firebaseConfig'; // Asegúrate de que la ruta sea correcta
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,32 +15,28 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export default function Login() {
+export default function Register() {
   const { register, handleSubmit, formState: { errors } } = useForm();
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   const onSubmit = async (data) => {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
-      console.log('Usuario conectado:', userCredential.user);
+      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+      const user = userCredential.user;
+
+      // Guardar datos adicionales en Firestore
+      await setDoc(doc(firestore, 'users', user.uid), {
+        nombre: data.nombre,
+        apellido: data.apellido,
+        email: data.email
+      });
+
+      console.log('Usuario registrado:', user);
       navigate('/dashboard');
     } catch (error) {
-      // Manejo de errores de Firebase
-      switch (error.code) {
-        case 'auth/user-not-found':
-          setError('No existe una cuenta con ese correo electrónico.');
-          break;
-        case 'auth/wrong-password':
-          setError('La contraseña es incorrecta.');
-          break;
-        case 'auth/too-many-requests':
-          setError('Demasiados intentos fallidos. Por favor, inténtalo más tarde.');
-          break;
-        default:
-          setError('Error al iniciar sesión. Por favor, inténtalo de nuevo.');
-          break;
-      }
+      console.error('Error al registrar el usuario:', error);
+      setError('Error al registrar el usuario. Por favor, inténtalo de nuevo.');
     }
   };
 
@@ -47,13 +44,33 @@ export default function Login() {
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">Iniciar sesión</CardTitle>
+          <CardTitle className="text-xl">Crear cuenta</CardTitle>
           <CardDescription>
-            Ingresa tu correo electrónico para acceder a tu cuenta
+            Ingresa tu información para crear una cuenta
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="nombre">Nombre</Label>
+                <Input 
+                  id="nombre" 
+                  placeholder="Tu nombre" 
+                  {...register('nombre', { required: 'El nombre es obligatorio' })} 
+                />
+                {errors.nombre && <p className="text-red-500 text-sm">{errors.nombre.message}</p>}
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="apellido">Apellido</Label>
+                <Input 
+                  id="apellido" 
+                  placeholder="Tu apellido" 
+                  {...register('apellido', { required: 'El apellido es obligatorio' })} 
+                />
+                {errors.apellido && <p className="text-red-500 text-sm">{errors.apellido.message}</p>}
+              </div>
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="email">Correo electrónico</Label>
               <Input
@@ -71,12 +88,7 @@ export default function Login() {
               {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
             </div>
             <div className="grid gap-2">
-              <div className="flex items-center">
-                <Label htmlFor="password">Contraseña</Label>
-                <Link to="#" className="ml-auto inline-block text-sm underline">
-                  ¿Olvidaste tu contraseña?
-                </Link>
-              </div>
+              <Label htmlFor="password">Contraseña</Label>
               <Input
                 id="password"
                 type="password"
@@ -86,13 +98,13 @@ export default function Login() {
             </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}
             <Button type="submit" className="w-full">
-              Iniciar sesión
+              Crear cuenta
             </Button>
           </form>
           <div className="mt-4 text-center text-sm">
-            ¿No tienes una cuenta?{" "}
-            <Link to="/register" className="underline">
-              Regístrate
+            ¿Ya tienes una cuenta?{" "}
+            <Link to="/login" className="underline">
+              Iniciar sesión
             </Link>
           </div>
         </CardContent>
